@@ -201,7 +201,7 @@ process_companion_pr() {
   git fetch origin "pull/$pr_number/head:$pr_head_ref"
   git checkout "$pr_head_sha"
 
-  echo "running checks for the companion $pr_url of $companion_repo"
+  echo "running checks for the companion $companion_expr of $companion_repo"
   patch_and_check_dependent
 
   popd >/dev/null
@@ -246,7 +246,6 @@ for dep in "${dependents[@]}"; do
   if [ ! -e "$dep" ]; then
     git clone --depth 1 "https://github.com/$org/$dep.git"
   fi
-  git clone --depth 1 "https://github.com/$org/$dep.git"
   pushd "$dep" >/dev/null
 
   patch_and_check_dependent

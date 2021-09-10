@@ -232,6 +232,7 @@ check-dependent-projects:
   <<:                              *test-refs-no-trigger
   <<:                              *vault-secrets
   script:
+    - jq --version
     - ./.maintain/gitlab/check_dependent_projects.sh
   after_script:
     - cd "$COMPANION_REPO" && git rev-parse --abbrev-ref HEAD
