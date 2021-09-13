@@ -40,18 +40,6 @@ this_repo_diener_arg="--substrate"
 this_repo_dir="$PWD"
 org="paritytech"
 
-# Set the user name and email to make merging work
-git config --global user.name 'CI system'
-git config --global user.email '<>'
-git config --global pull.rebase false
-
-# Merge master into our branch so that the compilation takes into account how the code is going to
-# going to perform when the code for this pull request lands on the target branch (à la pre-merge
-# pipelines).
-# Note that the target branch might not actually be master, but we default to it in the assumption
-# of the common case. This could be refined in the future.
-git pull origin master
-
 our_crates=()
 our_crates_source="git+https://github.com/$org/$this_repo"
 discover_our_crates() {
@@ -76,7 +64,7 @@ discover_our_crates() {
     fi
   # dependents with {"source": null} are the ones we own, hence the getpath($p)==null in the jq
   # script below
-  done < <(cargo metadata --quiet --format-version=1 | "$jq" -r '
+  done < <(cargo metadata --quiet --format-version=1 | jq -r '
     . as $in |
     paths |
     select(.[-1]=="source" and . as $p | $in | getpath($p)==null) as $path |
@@ -141,7 +129,7 @@ match_their_crates() {
         die "ERROR: Unknown state $next"
       ;;
     esac
-  done < <(cargo metadata --quiet --format-version=1 | "$jq" -r '
+  done < <(cargo metadata --quiet --format-version=1 | jq -r '
     . as $in |
     paths(select(type=="string")) |
     select(.[-1]=="source") as $source_path |
@@ -192,7 +180,7 @@ process_companion_pr() {
       -sSL \
       -H "Authorization: token $GITHUB_TOKEN" \
       "$gh_api/repos/$org/$companion_repo/pulls/$companion_pr_number" | \
-    "$jq" -e -r "[
+    jq -r "[
       .mergeable // error(\"Companion $companion_expr is not mergeable\"),
       .head.ref // error(\"Missing .head.ref from API data of $companion_expr\"),
       .head.sha // error(\"Missing .head.sha from API data of $companion_expr\")
@@ -216,12 +204,24 @@ process_companion_pr() {
 }
 
 main() {
-  set_github_token
+  # Set the user name and email to make merging work
+  git config --global user.name 'CI system'
+  git config --global user.email '<>'
+  git config --global pull.rebase false
+
+  # Merge master into our branch so that the compilation takes into account how the code is going to
+  # going to perform when the code for this pull request lands on the target branch (à la pre-merge
+  # pipelines).
+  # Note that the target branch might not actually be master, but we default to it in the assumption
+  # of the common case. This could be refined in the future.
+  git pull origin master
 
   discover_our_crates
 
   if [[ "$CI_COMMIT_REF_NAME" =~ ^[[:digit:]]+$ ]]; then
     echo "this is pull request number $CI_COMMIT_REF_NAME"
+
+    set_github_token
 
     # workaround for early exits not being detected in command substitution
     # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
@@ -239,7 +239,7 @@ main() {
         -sSL \
         -H "Authorization: token $GITHUB_TOKEN" \
         "$gh_api/repos/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
-      "$jq" -e -r ".body"
+      jq -e -r ".body"
     )
     if [ -z "${last_line+_}" ]; then
       die "No lines were read for the description of PR $companion_pr_number (some error probably occurred)"
