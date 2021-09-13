@@ -7,8 +7,9 @@
 
 # Companion dependents are extracted from the PR's description when lines conform to the following
 # formats:
-# [cC]ompanion: $organization/$repo#567
-# [cC]ompanion: $repo#567
+# [cC]ompanion: https://github.com/org/repo/pull/pr_number
+# [cC]ompanion: org/repo#pr_number
+# [cC]ompanion: repo#pr_number
 
 #shellcheck source=../common/lib.sh
 . "$(dirname "$0")/../common/lib.sh"
