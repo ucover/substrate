@@ -214,7 +214,7 @@ process_companion_pr() {
 main() {
   discover_our_crates
 
-  if [[ "$CI_COMMIT_REF_NAME" =~ ^[0-9]\+$ ]]; then
+  if [[ "$CI_COMMIT_REF_NAME" =~ ^[[:digit:]]+$ ]]; then
     echo "this is pull request number $CI_COMMIT_REF_NAME"
 
     # workaround for early exits not being detected in command substitution
