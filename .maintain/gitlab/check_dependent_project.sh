@@ -222,7 +222,7 @@ main() {
     local last_line
     while IFS= read -r line; do
       last_line="$line"
-      if [[ ! "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
+      if ! [[ "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
         continue
       fi
 
