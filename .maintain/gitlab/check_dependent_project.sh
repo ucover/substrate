@@ -239,7 +239,7 @@ main() {
         "$api_base/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
       "$jq" -e -r ".body"
     )
-    if [ -z "${last_line+_}" ]; then
+    if [ -z "${last_line+_}" ] || [ "$last_line" == null ]; then
       die "No lines were read for the description of PR $pr_number (some error probably occurred)"
     fi
   fi
