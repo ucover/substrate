@@ -231,6 +231,7 @@ main() {
     # workaround for early exits not being detected in command substitution
     # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
     local last_line
+
     while IFS= read -r line; do
       last_line="$line"
       if ! [[ "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
@@ -245,7 +246,7 @@ main() {
         "$gh_api/repos/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
       "$jq" -e -r ".body"
     )
-    if [ -z "${last_line+_}" ] || [ "$last_line" == null ]; then
+    if [ -z "${last_line+_}" ]; then
       die "No lines were read for the description of PR $companion_pr_number (some error probably occurred)"
     fi
   fi
