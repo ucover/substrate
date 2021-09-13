@@ -225,6 +225,7 @@ main() {
     # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
     local last_line
     while IFS= read -r line; do
+      echo "$line"
       last_line="$line"
       if ! [[ "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
         continue
