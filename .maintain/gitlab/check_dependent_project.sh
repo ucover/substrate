@@ -14,11 +14,13 @@
 . "$(dirname "$0")/../common/lib.sh"
 
 echo "
+
 check_dependent_project
 ========================
 
 This check ensures that this project's dependents do not suffer downstream breakages from new code
 changes.
+
 "
 
 # FIXME: use base jq from CI when it gets updated to Ubuntu LTS
