@@ -232,6 +232,8 @@ default:
   <<:                              *test-refs-no-trigger
   <<:                              *vault-secrets
   script:
+    - uname -a
+    - jq --version
     - ./.maintain/gitlab/check_dependent_project.sh "$DEPENDENT_REPO"
   after_script:
     - cd "$DEPENDENT_REPO" && git rev-parse --abbrev-ref HEAD
