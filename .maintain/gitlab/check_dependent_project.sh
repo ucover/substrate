@@ -216,6 +216,8 @@ process_companion_pr() {
 }
 
 main() {
+  set_github_token
+
   discover_our_crates
 
   if [[ "$CI_COMMIT_REF_NAME" =~ ^[[:digit:]]+$ ]]; then
