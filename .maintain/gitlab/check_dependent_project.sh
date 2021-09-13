@@ -21,6 +21,17 @@ This check ensures that this project's dependents do not suffer downstream break
 changes.
 "
 
+# FIXME: use base jq from CI when it gets updated to Ubuntu LTS
+
+jq="$PWD/jq16"
+curl -sqL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o "$jq"
+chmod +x "$jq"
+jq_sha256sum="af986793a515d500ab2d35f8d2aecd656e764504b789b66d7e1a0b727a124c44  $jq"
+if [ "$(sha256sum "$jq")" != "$jq_sha256sum" ]; then
+  echo "ERROR: jq sha256sum mismatch"
+  exit 1
+fi
+
 set -eu -o pipefail
 shopt -s inherit_errexit
 
@@ -73,7 +84,7 @@ discover_our_crates() {
     fi
   # dependents with {"source": null} are the ones we own, hence the getpath($p)==null in the jq
   # script below
-  done < <(cargo metadata --quiet --format-version=1 | jq -r '
+  done < <(cargo metadata --quiet --format-version=1 | "$jq" -r '
     . as $in |
     paths |
     select(.[-1]=="source" and . as $p | $in | getpath($p)==null) as $path |
@@ -138,7 +149,7 @@ match_their_crates() {
         die "ERROR: Unknown state $next"
       ;;
     esac
-  done < <(cargo metadata --quiet --format-version=1 | jq -r '
+  done < <(cargo metadata --quiet --format-version=1 | "$jq" -r '
     . as $in |
     paths(select(type=="string")) |
     select(.[-1]=="source") as $source_path |
@@ -186,7 +197,7 @@ process_companion_pr() {
 
   was_companion_found=true
 
-  read -r mergeable pr_head_ref pr_head_sha < <(curl -sSL "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | jq -r "\(mergeable) \(.head.ref) \(.head.sha)")
+  read -r mergeable pr_head_ref pr_head_sha < <(curl -sSL "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | "$jq" -r "\(mergeable) \(.head.ref) \(.head.sha)")
 
   local expected_mergeable=true
   if [ "$mergeable" != "$expected_mergeable" ]; then
@@ -225,7 +236,7 @@ main() {
         -sSL \
         -H "Authorization: token ${GITHUB_TOKEN}" \
         "$api_base/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
-      jq -r ".body"
+      "$jq" -r ".body"
     )
     if [ -z "${last_line+_}" ]; then
       die "No lines were read for the description of PR $pr_number (some error probably occurred)"
