@@ -234,11 +234,12 @@ default:
   script:
     - ./.maintain/gitlab/check_dependent_project.sh "$DEPENDENT_REPO"
   after_script:
-    - cd "$COMPANION_REPO" && git rev-parse --abbrev-ref HEAD
+    - cd "$DEPENDENT_REPO" && git rev-parse --abbrev-ref HEAD
 
-# Note: we set up different jobs for each dependent project so that they can be ran in parallel.
+# Individual jobs are set up for each dependent project so that they can be ran in parallel.
 # Arguably we could generate a job for each companion in the PR's description using Gitlab's
 # parent-child pipelines but that's more complicated.
+
 check-dependent-polkadot:
   <<: *check-dependent-project
   variables:
