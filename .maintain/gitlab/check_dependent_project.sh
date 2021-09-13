@@ -225,7 +225,6 @@ main() {
     # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
     local last_line
     while IFS= read -r line; do
-      echo "$line"
       last_line="$line"
       if ! [[ "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
         continue
@@ -236,7 +235,7 @@ main() {
     done < <(curl \
         -sSL \
         -H "Authorization: token ${GITHUB_TOKEN}" \
-        "$api_base/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
+        "$api_base/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
       "$jq" -r ".body"
     )
     if [ -z "${last_line+_}" ]; then
