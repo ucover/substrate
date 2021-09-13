@@ -195,6 +195,7 @@ process_companion_pr() {
 
   read -r mergeable pr_head_ref pr_head_sha < <(curl \
       -sSL \
+      -H "Authorization: token $GITHUB_TOKEN" \
       "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | \
     "$jq" -r "\(mergeable) \(.head.ref) \(.head.sha)"
   )
