@@ -197,7 +197,7 @@ process_companion_pr() {
       -sSL \
       -H "Authorization: token $GITHUB_TOKEN" \
       "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | \
-    "$jq" -r "\(mergeable) \(.head.ref) \(.head.sha)"
+    "$jq" -e -r "\(.mergeable) \(.head.ref) \(.head.sha)"
   )
 
   local expected_mergeable=true
@@ -228,7 +228,6 @@ main() {
     # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
     local last_line
     while IFS= read -r line; do
-      echo "PR BODY LINE: $line"
       last_line="$line"
       if ! [[ "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
         continue
@@ -240,7 +239,7 @@ main() {
         -sSL \
         -H "Authorization: token $GITHUB_TOKEN" \
         "$api_base/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
-      "$jq" -r ".body"
+      "$jq" -e -r ".body"
     )
     if [ -z "${last_line+_}" ]; then
       die "No lines were read for the description of PR $pr_number (some error probably occurred)"
