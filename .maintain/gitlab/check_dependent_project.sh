@@ -11,18 +11,18 @@
 # [cC]ompanion: $repo#567
 
 #shellcheck source=../common/lib.sh
-. "$(dirname "${0}")/../common/lib.sh"
-
-set -eu -o pipefail
-shopt -s inherit_errexit
+. "$(dirname "$0")/../common/lib.sh"
 
 echo "
-check_dependent_projects
+check_dependent_project
 ========================
 
 This check ensures that this project's dependents do not suffer downstream breakages from new code
 changes.
 "
+
+set -eu -o pipefail
+shopt -s inherit_errexit
 
 die() {
   if [ "${1:-}" ]; then
@@ -31,12 +31,9 @@ die() {
   exit 1
 }
 
-# Those are the dependents which will unconditionally be checked even if no companions are specified
-# in the pull request's description
-dependents=("polkadot" "cumulus" "grandpa-bridge-gadget")
-
+dependent_repo="$1"
 this_repo="substrate"
-this_repo_diener_patch="--substrate"
+this_repo_diener_arg="--substrate"
 this_repo_dir="$PWD"
 org="paritytech"
 
@@ -87,10 +84,9 @@ discover_our_crates() {
     die "No lines were read for cargo metadata of $PWD (some error probably occurred)"
   fi
 }
-discover_our_crates
 
 match_their_crates() {
-  local target_name="$(basename "$PWD")"
+  local target_name="$1"
   local crates_not_found=()
   local found
 
@@ -163,40 +159,41 @@ match_their_crates() {
 }
 
 patch_and_check_dependent() {
-  match_their_crates
-  diener patch --crates-to-patch "$this_repo_dir" $this_repo_diener_patch --path "Cargo.toml"
-  cargo test --all
+  match_their_crates "$(basename "$PWD")"
+  diener patch --crates-to-patch "$this_repo_dir" "$this_repo_diener_arg" --path "Cargo.toml"
+  cargo check --all-targets --workspace
 }
 
-companions_found=()
-companion_errors=()
 process_companion_pr() {
   local companion_repo, pr_number
 
   # e.g. https://github.com/paritytech/polkadot/pull/123
   # or   polkadot#123
   local companion_expr="$1"
-  if [[ "$companion_expr" =~ ^https://github\.com/$org/([^/]+)/pull/([[:digit:]]+) ]] ||
+  if
+    [[ "$companion_expr" =~ ^https://github\.com/$org/([^/]+)/pull/([[:digit:]]+) ]] ||
     [[ "$companion_expr" =~ ^([^#]+)#([[:digit:]]+) ]]; then
     companion_repo="${BASH_REMATCH[1]}"
     pr_number="${BASH_REMATCH[2]}"
+    echo "Parsed companion_repo=$companion_repo and pr_number=$pr_number from $companion_expr (trying to match companion_repo=$dependent_repo)"
   else
     die "Companion PR description had invalid format or did not belong to organization $org: $companion_expr"
   fi
 
-  companions_found+=("$companion_repo")
+  if [ "$companion_repo" != "$dependent_repo" ]; then
+    return
+  fi
+
+  was_companion_found=true
 
   read -r mergeable pr_head_ref pr_head_sha < <(curl -sSL "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | jq -r "\(mergeable) \(.head.ref) \(.head.sha)")
 
   local expected_mergeable=true
   if [ "$mergeable" != "$expected_mergeable" ]; then
-    companion_errors+=("Github API says $companion_expr is not mergeable (checked at $(date))")
-    return
+    die "Github API says ${companion_repo}'s PR $pr_number is not mergeable"
   fi
 
-  if [ ! -e "$companion_repo" ]; then
-    git clone --depth 1 "https://github.com/$org/$companion_repo.git"
-  fi
+  git clone --depth 1 "https://github.com/$org/$companion_repo.git"
   pushd "$companion_repo" >/dev/null
   git fetch origin "pull/$pr_number/head:$pr_head_ref"
   git checkout "$pr_head_sha"
@@ -207,53 +204,45 @@ process_companion_pr() {
   popd >/dev/null
 }
 
-process_companions() {
-  if [[ ! "$CI_COMMIT_REF_NAME" =~ ^[0-9]\+$ ]]; then
-    return
-  fi
+main() {
+  discover_our_crates
 
-  echo "this is pull request number $CI_COMMIT_REF_NAME"
+  if [[ "$CI_COMMIT_REF_NAME" =~ ^[0-9]\+$ ]]; then
+    echo "this is pull request number $CI_COMMIT_REF_NAME"
 
-  # workaround for early exits not being detected in command substitution
-  # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
-  local last_line
-  while IFS= read -r line; do
-    last_line="$line"
-    if [[ ! "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
-      continue
+    # workaround for early exits not being detected in command substitution
+    # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
+    local last_line
+    while IFS= read -r line; do
+      last_line="$line"
+      if [[ ! "$line" =~ [cC]ompanion:[[:space:]]*(.+) ]]; then
+        continue
+      fi
+
+      echo "detected companion in PR description: ${BASH_REMATCH[1]}"
+      process_companion_pr "${BASH_REMATCH[1]}"
+    done < <(curl \
+        -sSL \
+        -H "Authorization: token ${GITHUB_TOKEN}" \
+        "$api_base/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
+      jq -r ".body"
+    )
+    if [ -z "${last_line+_}" ]; then
+      die "No lines were read for the description of PR $pr_number (some error probably occurred)"
     fi
-
-    echo "detected companion in PR description: ${BASH_REMATCH[1]}"
-    process_companion_pr "${BASH_REMATCH[1]}"
-  done < <(curl -sSL -H "${github_header}" "$api_base/$this_repo/pulls/$CI_COMMIT_REF_NAME" | jq -r ".body")
-  if [ -z "${last_line+_}" ]; then
-    die "No lines were read for the description of PR $pr_number (some error probably occurred)"
   fi
-}
-process_companions
 
-for dep in "${dependents[@]}"; do
-  # if the dependent has already been checked as a companion, there's no point to test their
-  # default branch
-  for companion in "${companions_found[@]}"; do
-    if [ "$dep" = "$companion" ]; then
-      continue 2
-    fi
-  done
-
-  echo "running checks for the default branch of $dep"
-
-  if [ ! -e "$dep" ]; then
-    git clone --depth 1 "https://github.com/$org/$dep.git"
+  if [ "${was_companion_found:-}" ]; then
+    exit
   fi
-  pushd "$dep" >/dev/null
+
+  echo "running checks for the default branch of $dependent_repo"
+
+  git clone --depth 1 "https://github.com/$org/$dependent_repo.git"
+  pushd "$dependent_repo" >/dev/null
 
   patch_and_check_dependent
 
   popd >/dev/null
-done
-
-if [ "${companion_errors[@]}" ]; then
-  echo
-  printf "%s\n" "${companion_errors[@]}"
-fi
+}
+main

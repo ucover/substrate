@@ -226,13 +226,30 @@ default:
       vault:                       cicd/gitlab/$CI_PROJECT_PATH/VALIDATOR_KEYS_CHAOS@kv
       file:                        false
 
-check-dependent-projects:
+.check-dependent-project: &check-dependent-project
   stage:                           build
   <<:                              *docker-env
   <<:                              *test-refs-no-trigger
   <<:                              *vault-secrets
   script:
-    - jq --version
-    - ./.maintain/gitlab/check_dependent_projects.sh
+    - ./.maintain/gitlab/check_dependent_project.sh "$DEPENDENT_REPO"
   after_script:
     - cd "$COMPANION_REPO" && git rev-parse --abbrev-ref HEAD
+
+# Note: we set up different jobs for each dependent project so that they can be ran in parallel.
+# Arguably we could generate a job for each companion in the PR's description using Gitlab's
+# parent-child pipelines but that's more complicated.
+check-dependent-polkadot:
+  <<: *check-dependent-project
+  variables:
+    DEPENDENT_REPO: polkadot
+
+check-dependent-beefy:
+  <<: *check-dependent-project
+  variables:
+    DEPENDENT_REPO: grandpa-bridge-gadget
+
+check-dependent-cumulus:
+  <<: *check-dependent-project
+  variables:
+    DEPENDENT_REPO: cumulus
