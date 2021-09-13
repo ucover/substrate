@@ -56,7 +56,7 @@ git config --global pull.rebase false
 git pull origin master
 
 our_crates=()
-our_crates_source="git+https://github.com/paritytech/substrate"
+our_crates_source="git+https://github.com/$org/$this_repo"
 discover_our_crates() {
   # workaround for early exits not being detected in command substitution
   # https://unix.stackexchange.com/questions/541969/nested-command-substitution-does-not-stop-a-script-on-a-failure-even-if-e-and-s
@@ -178,6 +178,7 @@ process_companion_pr() {
   local companion_expr="$1"
   if
     [[ "$companion_expr" =~ ^https://github\.com/$org/([^/]+)/pull/([[:digit:]]+) ]] ||
+    [[ "$companion_expr" =~ ^$org/([^#]+)#([[:digit:]]+) ]] ||
     [[ "$companion_expr" =~ ^([^#]+)#([[:digit:]]+) ]]; then
     companion_repo="${BASH_REMATCH[1]}"
     pr_number="${BASH_REMATCH[2]}"
