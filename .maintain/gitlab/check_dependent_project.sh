@@ -195,7 +195,7 @@ process_companion_pr() {
       -sSL \
       -H "Authorization: token $GITHUB_TOKEN" \
       "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | \
-    "$jq" -e -r "\(.mergeable) \(.head.ref) \(.head.sha)"
+    "$jq" -e -r '"\(.mergeable // error(".mergeable")) \(.head.ref // error(".head.ref")) \(.head.sha // error(".head.sha"))"'
   )
 
   local expected_mergeable=true
