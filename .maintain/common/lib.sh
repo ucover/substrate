@@ -1,6 +1,6 @@
 #!/bin/sh
 
-api_base="https://api.github.com/repos"
+gh_api="https://api.github.com"
 
 
 set_github_token(){
@@ -34,7 +34,7 @@ last_github_release(){
   i=0
   # Iterate over releases until we find the last release that's not just a draft
   while [ $i -lt 29 ]; do
-    out=$(curl -H "Authorization: token $GITHUB_RELEASE_TOKEN" -s "$api_base/$1/releases" | jq ".[$i]")
+    out=$(curl -H "Authorization: token $GITHUB_RELEASE_TOKEN" -s "$gh_api/repos/$1/releases" | jq ".[$i]")
     echo "$out"
     # Ugh when echoing to jq, we need to translate newlines into spaces :/
     if [ "$(echo "$out" | tr '\r\n' ' ' | jq '.draft')" = "false" ]; then
@@ -53,7 +53,7 @@ last_github_release(){
 check_tag () {
   repo=$1
   tagver=$2
-  tag_out=$(curl -H "Authorization: token $GITHUB_RELEASE_TOKEN" -s "$api_base/$repo/git/refs/tags/$tagver")
+  tag_out=$(curl -H "Authorization: token $GITHUB_RELEASE_TOKEN" -s "$gh_api/repos/$repo/git/refs/tags/$tagver")
   tag_sha=$(echo "$tag_out" | jq -r .object.sha)
   object_url=$(echo "$tag_out" | jq -r .object.url)
   if [ "$tag_sha" = "null" ]; then
@@ -80,7 +80,7 @@ has_label(){
   label="$3"
   set_github_token
 
-  out=$(curl -H "Authorization: token $GITHUB_TOKEN" -s "$api_base/$repo/pulls/$pr_id")
+  out=$(curl -H "Authorization: token $GITHUB_TOKEN" -s "$gh_api/repos/$repo/pulls/$pr_id")
   [ -n "$(echo "$out" | tr -d '\r\n' | jq ".labels | .[] | select(.name==\"$label\")")" ]
 }
 

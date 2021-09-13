@@ -181,8 +181,8 @@ process_companion_pr() {
     [[ "$companion_expr" =~ ^$org/([^#]+)#([[:digit:]]+) ]] ||
     [[ "$companion_expr" =~ ^([^#]+)#([[:digit:]]+) ]]; then
     local companion_repo="${BASH_REMATCH[1]}"
-    local pr_number="${BASH_REMATCH[2]}"
-    echo "Parsed companion_repo=$companion_repo and pr_number=$pr_number from $companion_expr (trying to match companion_repo=$dependent_repo)"
+    local companion_pr_number="${BASH_REMATCH[2]}"
+    echo "Parsed companion_repo=$companion_repo and companion_pr_number=$companion_pr_number from $companion_expr (trying to match companion_repo=$dependent_repo)"
   else
     die "Companion PR description had invalid format or did not belong to organization $org: $companion_expr"
   fi
@@ -193,23 +193,21 @@ process_companion_pr() {
 
   was_companion_found=true
 
-  curl \
-    -sSL \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    "$api_base/repos/$org/$companion_repo/pulls/$pr_number" > result.json
-  cat result.json
-  read -r mergeable pr_head_ref pr_head_sha < <(cat result.json | \
+  read -r mergeable pr_head_ref pr_head_sha < <(curl \
+      -sSL \
+      -H "Authorization: token $GITHUB_TOKEN" \
+      "$gh_api/repos/$org/$companion_repo/pulls/$companion_pr_number" |
     "$jq" -e -r '"\(.mergeable // error(".mergeable")) \(.head.ref // error(".head.ref")) \(.head.sha // error(".head.sha"))"'
   )
 
   local expected_mergeable=true
   if [ "$mergeable" != "$expected_mergeable" ]; then
-    die "Github API says ${companion_repo}'s PR $pr_number is not mergeable"
+    die "Github API says ${companion_repo}'s PR $companion_pr_number is not mergeable"
   fi
 
   git clone --depth 1 "https://github.com/$org/$companion_repo.git"
   pushd "$companion_repo" >/dev/null
-  git fetch origin "pull/$pr_number/head:$pr_head_ref"
+  git fetch origin "pull/$companion_pr_number/head:$pr_head_ref"
   git checkout "$pr_head_sha"
 
   echo "running checks for the companion $companion_expr of $companion_repo"
@@ -240,11 +238,11 @@ main() {
     done < <(curl \
         -sSL \
         -H "Authorization: token $GITHUB_TOKEN" \
-        "$api_base/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
+        "$gh_api/repos/$org/$this_repo/pulls/$CI_COMMIT_REF_NAME" | \
       "$jq" -e -r ".body"
     )
     if [ -z "${last_line+_}" ] || [ "$last_line" == null ]; then
-      die "No lines were read for the description of PR $pr_number (some error probably occurred)"
+      die "No lines were read for the description of PR $companion_pr_number (some error probably occurred)"
     fi
   fi
 
