@@ -171,8 +171,6 @@ patch_and_check_dependent() {
 }
 
 process_companion_pr() {
-  local companion_repo, pr_number
-
   # e.g. https://github.com/paritytech/polkadot/pull/123
   # or   polkadot#123
   local companion_expr="$1"
@@ -180,8 +178,8 @@ process_companion_pr() {
     [[ "$companion_expr" =~ ^https://github\.com/$org/([^/]+)/pull/([[:digit:]]+) ]] ||
     [[ "$companion_expr" =~ ^$org/([^#]+)#([[:digit:]]+) ]] ||
     [[ "$companion_expr" =~ ^([^#]+)#([[:digit:]]+) ]]; then
-    companion_repo="${BASH_REMATCH[1]}"
-    pr_number="${BASH_REMATCH[2]}"
+    local companion_repo="${BASH_REMATCH[1]}"
+    local pr_number="${BASH_REMATCH[2]}"
     echo "Parsed companion_repo=$companion_repo and pr_number=$pr_number from $companion_expr (trying to match companion_repo=$dependent_repo)"
   else
     die "Companion PR description had invalid format or did not belong to organization $org: $companion_expr"
