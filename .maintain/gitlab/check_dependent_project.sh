@@ -193,16 +193,20 @@ process_companion_pr() {
 
   was_companion_found=true
 
-  read -r mergeable pr_head_ref pr_head_sha < <(curl \
+  read -d '\n' -r mergeable pr_head_ref pr_head_sha < <(curl \
       -sSL \
       -H "Authorization: token $GITHUB_TOKEN" \
       "$gh_api/repos/$org/$companion_repo/pulls/$companion_pr_number" | \
-    "$jq" -e -r '"\(.mergeable // error(".mergeable")) \(.head.ref // error(".head.ref")) \(.head.sha // error(".head.sha"))"'
+    "$jq" -e -r "[
+      .mergeable // error(\"Companion $companion_expr is not mergeable\"),
+      .head.ref // error(\"Missing .head.ref from API data of $companion_expr\"),
+      .head.sha // error(\"Missing .head.sha from API data of $companion_expr\")
+    ] | .[]"
   )
 
   local expected_mergeable=true
   if [ "$mergeable" != "$expected_mergeable" ]; then
-    die "Github API says ${companion_repo}'s PR $companion_pr_number is not mergeable"
+    die "Github API says $companion_expr is not mergeable (got $mergeable, expected $expected_mergeable)"
   fi
 
   git clone --depth 1 "https://github.com/$org/$companion_repo.git"
