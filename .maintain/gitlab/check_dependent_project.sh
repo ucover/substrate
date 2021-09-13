@@ -193,10 +193,12 @@ process_companion_pr() {
 
   was_companion_found=true
 
-  read -r mergeable pr_head_ref pr_head_sha < <(curl \
-      -sSL \
-      -H "Authorization: token $GITHUB_TOKEN" \
-      "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | \
+  curl \
+    -sSL \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    "$api_base/repos/$org/$companion_repo/pulls/$pr_number" > result.json
+  cat result.json
+  read -r mergeable pr_head_ref pr_head_sha < <(cat result.json | \
     "$jq" -e -r '"\(.mergeable // error(".mergeable")) \(.head.ref // error(".head.ref")) \(.head.sha // error(".head.sha"))"'
   )
 
