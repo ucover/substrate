@@ -22,15 +22,10 @@ changes.
 "
 
 # FIXME: use base jq from CI when it gets updated to Ubuntu LTS
-
 jq="$PWD/jq16"
 curl -sqL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o "$jq"
 chmod +x "$jq"
-jq_sha256sum="af986793a515d500ab2d35f8d2aecd656e764504b789b66d7e1a0b727a124c44  $jq"
-if [ "$(sha256sum "$jq")" != "$jq_sha256sum" ]; then
-  echo "ERROR: jq sha256sum mismatch"
-  exit 1
-fi
+echo "af986793a515d500ab2d35f8d2aecd656e764504b789b66d7e1a0b727a124c44  $jq" | sha256sum --check
 
 set -eu -o pipefail
 shopt -s inherit_errexit
