@@ -193,7 +193,11 @@ process_companion_pr() {
 
   was_companion_found=true
 
-  read -r mergeable pr_head_ref pr_head_sha < <(curl -sSL "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | "$jq" -r "\(mergeable) \(.head.ref) \(.head.sha)")
+  read -r mergeable pr_head_ref pr_head_sha < <(curl \
+      -sSL \
+      "$api_base/repos/$org/$companion_repo/pulls/$pr_number" | \
+    "$jq" -r "\(mergeable) \(.head.ref) \(.head.sha)"
+  )
 
   local expected_mergeable=true
   if [ "$mergeable" != "$expected_mergeable" ]; then
