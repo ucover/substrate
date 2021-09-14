@@ -35,8 +35,8 @@ die() {
 }
 
 dependent_repo="$1"
-this_repo="substrate"
-this_repo_diener_arg="--substrate"
+this_repo="$2"
+this_repo_diener_arg="$3"
 this_repo_dir="$PWD"
 org="paritytech"
 
