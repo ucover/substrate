@@ -152,7 +152,7 @@ match_their_crates() {
 patch_and_check_dependent() {
   match_their_crates "$(basename "$PWD")"
   diener patch --crates-to-patch "$this_repo_dir" "$this_repo_diener_arg" --path "Cargo.toml"
-  cargo check --all-targets --workspace
+  eval "${COMPANION_CHECK_COMMAND:-cargo check --all-targets --workspace}"
 }
 
 process_companion_pr() {
