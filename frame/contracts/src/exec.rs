@@ -651,16 +651,18 @@ where
 
 			// Additional work needs to be performed in case of an instantiation.
 			if output.is_success() && entry_point == ExportedFunction::Constructor {
-				let frame = self.top_frame_mut();
-				let account_id = frame.account_id.clone();
+				let frame = self.top_frame();
 
 				// It is not allowed to terminate a contract inside its constructor.
-				if let CachedContract::Terminated = frame.contract_info {
+				if matches!(frame.contract_info, CachedContract::Terminated) {
 					return Err(Error::<T>::TerminatedInConstructor.into())
 				}
 
 				// Deposit an instantiation event.
-				deposit_event::<T>(vec![], Event::Instantiated(self.caller().clone(), account_id));
+				deposit_event::<T>(
+					vec![],
+					Event::Instantiated(self.caller().clone(), frame.account_id.clone()),
+				);
 			}
 
 			Ok(output)
