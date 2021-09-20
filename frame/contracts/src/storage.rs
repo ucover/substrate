@@ -17,6 +17,8 @@
 
 //! This module contains routines for accessing and altering a contract related state.
 
+mod meter;
+
 use crate::{
 	exec::{AccountIdOf, StorageKey},
 	weights::WeightInfo,

@@ -208,6 +208,21 @@ pub mod pallet {
 		/// The maximum amount of weight that can be consumed per block for lazy trie removal.
 		#[pallet::constant]
 		type DeletionWeightLimit: Get<Weight>;
+
+		/// The amount of balance a caller has to pay for each byte of storage.
+		///
+		/// # Note
+		///
+		/// Changing this value for an existing chain might need a storage migration.
+		#[pallet::constant]
+		type DepositPerByte: Get<BalanceOf<Self>>;
+
+		/// The amount of balance a caller has to pay for each storage item.
+		/// # Note
+		///
+		/// Changing this value for an existing chain might need a storage migration.
+		#[pallet::constant]
+		type DepositPerStorageItem: Get<BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -473,11 +488,6 @@ pub mod pallet {
 		/// The queue is filled by deleting contracts and emptied by a fixed amount each block.
 		/// Trying again during another block is the only way to resolve this issue.
 		DeletionQueueFull,
-		/// A storage modification exhausted the 32bit type that holds the storage size.
-		///
-		/// This can either happen when the accumulated storage in bytes is too large or
-		/// when number of storage items is too large.
-		StorageExhausted,
 		/// A contract with the same AccountId already exists.
 		DuplicateContract,
 		/// A contract self destructed in its constructor.
@@ -488,6 +498,10 @@ pub mod pallet {
 		DebugMessageInvalidUTF8,
 		/// A call tried to invoke a contract that is flagged as non-reentrant.
 		ReentranceDenied,
+		/// Origin doesn't have enough balance to pay for the storage limit.
+		StorageLimitTooHigh,
+		/// More storage was created than allowed by the storage limit.
+		StorageExhausted,
 	}
 
 	/// A mapping from an original code hash to the original code, untouched by instrumentation.
