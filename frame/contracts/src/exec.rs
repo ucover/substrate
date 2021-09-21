@@ -16,8 +16,10 @@
 // limitations under the License.
 
 use crate::{
-	gas::GasMeter, storage::Storage, AccountCounter, BalanceOf, CodeHash, Config, ContractInfo,
-	ContractInfoOf, Error, Event, Pallet as Contracts, Schedule,
+	gas::GasMeter,
+	storage::{NestedStorageMeter, Storage, StorageMeter},
+	AccountCounter, BalanceOf, CodeHash, Config, ContractInfo, ContractInfoOf, Error, Event,
+	Pallet as Contracts, Schedule,
 };
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo, Dispatchable},
@@ -310,6 +312,8 @@ pub struct Stack<'a, T: Config, E> {
 	schedule: &'a Schedule<T>,
 	/// The gas meter where costs are charged to.
 	gas_meter: &'a mut GasMeter<T>,
+	/// The storage meter makes sure that the storage limit is obeyed.
+	storage_meter: &'a mut StorageMeter<T>,
 	/// The timestamp at the point of call stack instantiation.
 	timestamp: MomentOf<T>,
 	/// The block number at the time of call stack instantiation.
@@ -350,7 +354,9 @@ pub struct Frame<T: Config> {
 	/// Determines whether this is a call or instantiate frame.
 	entry_point: ExportedFunction,
 	/// The gas meter capped to the supplied gas limit.
-	nested_meter: GasMeter<T>,
+	nested_gas: GasMeter<T>,
+	/// The storage meter for the individual call.
+	nested_storage: NestedStorageMeter<T>,
 	/// If `false` the contract enabled its defense against reentrance attacks.
 	allows_reentry: bool,
 }
@@ -472,6 +478,7 @@ where
 		origin: T::AccountId,
 		dest: T::AccountId,
 		gas_meter: &'a mut GasMeter<T>,
+		storage_meter: &'a mut StorageMeter<T>,
 		schedule: &'a Schedule<T>,
 		value: BalanceOf<T>,
 		input_data: Vec<u8>,
@@ -481,6 +488,7 @@ where
 			FrameArgs::Call { dest, cached_info: None },
 			origin,
 			gas_meter,
+			storage_meter,
 			schedule,
 			value,
 			debug_message,
@@ -502,6 +510,7 @@ where
 		origin: T::AccountId,
 		executable: E,
 		gas_meter: &'a mut GasMeter<T>,
+		storage_meter: &'a mut StorageMeter<T>,
 		schedule: &'a Schedule<T>,
 		value: BalanceOf<T>,
 		input_data: Vec<u8>,
@@ -517,6 +526,7 @@ where
 			},
 			origin,
 			gas_meter,
+			storage_meter,
 			schedule,
 			value,
 			debug_message,
@@ -530,6 +540,7 @@ where
 		args: FrameArgs<T, E>,
 		origin: T::AccountId,
 		gas_meter: &'a mut GasMeter<T>,
+		storage_meter: &'a mut StorageMeter<T>,
 		schedule: &'a Schedule<T>,
 		value: BalanceOf<T>,
 		debug_message: Option<&'a mut Vec<u8>>,
@@ -539,6 +550,7 @@ where
 			origin,
 			schedule,
 			gas_meter,
+			storage_meter
 			timestamp: T::Time::now(),
 			block_number: <frame_system::Pallet<T>>::block_number(),
 			account_counter: None,
@@ -559,6 +571,7 @@ where
 		frame_args: FrameArgs<T, E>,
 		value_transferred: BalanceOf<T>,
 		gas_meter: &mut GasMeter<T>,
+		storage_meter: &mut StorageMeter<T>,
 		gas_limit: Weight,
 		schedule: &Schedule<T>,
 	) -> Result<(Frame<T>, E), ExecError> {
@@ -592,7 +605,7 @@ where
 			contract_info: CachedContract::Cached(contract_info),
 			account_id,
 			entry_point,
-			nested_meter: gas_meter.nested(gas_limit)?,
+			nested_gas: gas_meter.nested(gas_limit)?,
 			allows_reentry: true,
 		};
 
@@ -623,10 +636,10 @@ where
 			}
 		}
 
-		let nested_meter =
-			&mut self.frames.last_mut().unwrap_or(&mut self.first_frame).nested_meter;
+		let nested_gas =
+			&mut self.frames.last_mut().unwrap_or(&mut self.first_frame).nested_gas;
 		let (frame, executable) =
-			Self::new_frame(frame_args, value_transferred, nested_meter, gas_limit, self.schedule)?;
+			Self::new_frame(frame_args, value_transferred, nested_gas, gas_limit, self.schedule)?;
 		self.frames.push(frame);
 		Ok(executable)
 	}
@@ -696,7 +709,7 @@ where
 		if let Some(frame) = frame {
 			let prev = self.top_frame_mut();
 			let account_id = &frame.account_id;
-			prev.nested_meter.absorb_nested(frame.nested_meter);
+			prev.nested_gas.absorb_nested(frame.nested_gas);
 			// Only gas counter changes are persisted in case of a failure.
 			if !persist {
 				return
@@ -730,7 +743,7 @@ where
 				);
 			}
 			// Write back to the root gas meter.
-			self.gas_meter.absorb_nested(mem::take(&mut self.first_frame.nested_meter));
+			self.gas_meter.absorb_nested(mem::take(&mut self.first_frame.nested_gas));
 			// Only gas counter changes are persisted in case of a failure.
 			if !persist {
 				return
@@ -916,7 +929,7 @@ where
 			T::Currency::free_balance(&frame.account_id),
 		)?;
 		ContractInfoOf::<T>::remove(&frame.account_id);
-		E::remove_user(info.code_hash, &mut frame.nested_meter)?;
+		E::remove_user(info.code_hash, &mut frame.nested_gas)?;
 		Contracts::<T>::deposit_event(Event::Terminated(
 			frame.account_id.clone(),
 			beneficiary.clone(),
@@ -989,7 +1002,7 @@ where
 	}
 
 	fn gas_meter(&mut self) -> &mut GasMeter<Self::T> {
-		&mut self.top_frame_mut().nested_meter
+		&mut self.top_frame_mut().nested_gas
 	}
 
 	fn append_debug_buffer(&mut self, msg: &str) -> bool {

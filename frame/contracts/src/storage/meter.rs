@@ -91,10 +91,7 @@ impl<T: Config> Saturating for Usage<T> {
 	}
 
 	fn saturating_pow(self, exp: usize) -> Self {
-		Self {
-			charge: self.charge.saturating_pow(exp),
-			refund: self.refund.saturating_pow(exp),
-		}
+		Self { charge: self.charge.saturating_pow(exp), refund: self.refund.saturating_pow(exp) }
 	}
 }
 
