@@ -23,28 +23,24 @@ use frame_support::{
 	DefaultNoBound,
 };
 use sp_core::crypto::UncheckedFrom;
-use sp_runtime::traits::Saturating;
+use sp_runtime::traits::{Saturating, Zero};
 use sp_std::marker::PhantomData;
 
-pub type Meter<'a, T> = RootMeter<'a, T, DefaultExt>;
+pub type Meter<T> = RawMeter<T, DefaultExt, state::Root>;
+pub type NestedMeter<T> = RawMeter<T, DefaultExt, state::Nested>;
 
 pub trait Ext<T: Config> {
 	fn reserve_limit(origin: &T::AccountId, limit: &BalanceOf<T>) -> DispatchResult;
-	fn unreserve_limit(origin: &T::AccountId, usage: &Usage<T>);
+	fn unreserve_limit(origin: &T::AccountId, limit: &BalanceOf<T>, usage: &Usage<T>);
 	fn charge(origin: &T::AccountId, contract: &T::AccountId, amount: &Cost<T>);
 }
 
-pub struct RootMeter<'a, T: Config, E: Ext<T>> {
-	origin: &'a T::AccountId,
+pub struct RawMeter<T: Config, E: Ext<T>, S: state::State> {
+	origin: Option<T::AccountId>,
 	limit: BalanceOf<T>,
-	usage: Usage<T>,
-	_ext: PhantomData<E>,
-}
-
-pub struct NestedMeter<'root, T: Config, E: Ext<T>> {
-	root: &'root mut RootMeter<'root, T, E>,
-	contract: T::AccountId,
-	usage: Usage<T>,
+	total_usage: Usage<T>,
+	own_usage: Usage<T>,
+	_phantom: PhantomData<(E, S)>,
 }
 
 pub enum Cost<T: Config> {
@@ -54,8 +50,8 @@ pub enum Cost<T: Config> {
 
 #[derive(DefaultNoBound, Clone)]
 pub struct Usage<T: Config> {
-	charged: BalanceOf<T>,
-	refunded: BalanceOf<T>,
+	charge: BalanceOf<T>,
+	refund: BalanceOf<T>,
 }
 
 pub enum DefaultExt {}
@@ -64,10 +60,10 @@ impl<T: Config> Copy for Usage<T> {}
 
 impl<T: Config> Usage<T> {
 	fn cost(&self) -> Cost<T> {
-		if self.charged >= self.refunded {
-			Cost::Charge(self.charged.saturating_sub(self.refunded))
+		if self.charge >= self.refund {
+			Cost::Charge(self.charge.saturating_sub(self.refund))
 		} else {
-			Cost::Refund(self.refunded.saturating_sub(self.charged))
+			Cost::Refund(self.refund.saturating_sub(self.charge))
 		}
 	}
 }
@@ -75,80 +71,117 @@ impl<T: Config> Usage<T> {
 impl<T: Config> Saturating for Usage<T> {
 	fn saturating_add(self, rhs: Self) -> Self {
 		Self {
-			charged: self.charged.saturating_add(rhs.charged),
-			refunded: self.refunded.saturating_add(rhs.refunded),
+			charge: self.charge.saturating_add(rhs.charge),
+			refund: self.refund.saturating_add(rhs.refund),
 		}
 	}
 
 	fn saturating_sub(self, rhs: Self) -> Self {
 		Self {
-			charged: self.charged.saturating_sub(rhs.charged),
-			refunded: self.refunded.saturating_sub(rhs.refunded),
+			charge: self.charge.saturating_sub(rhs.charge),
+			refund: self.refund.saturating_sub(rhs.refund),
 		}
 	}
 
 	fn saturating_mul(self, rhs: Self) -> Self {
 		Self {
-			charged: self.charged.saturating_mul(rhs.charged),
-			refunded: self.refunded.saturating_mul(rhs.refunded),
+			charge: self.charge.saturating_mul(rhs.charge),
+			refund: self.refund.saturating_mul(rhs.refund),
 		}
 	}
 
 	fn saturating_pow(self, exp: usize) -> Self {
 		Self {
-			charged: self.charged.saturating_pow(exp),
-			refunded: self.refunded.saturating_pow(exp),
+			charge: self.charge.saturating_pow(exp),
+			refund: self.refund.saturating_pow(exp),
 		}
 	}
 }
 
-impl<'a, T, E> Drop for RootMeter<'a, T, E>
+impl<T, E, S> Drop for RawMeter<T, E, S>
 where
 	T: Config,
 	E: Ext<T>,
+	S: state::State,
 {
 	fn drop(&mut self) {
-		E::unreserve_limit(&self.origin, &self.usage);
+		// Drop cannot be specialized: We need to do a runtime check.
+		if let Some(origin) = self.origin.as_ref() {
+			// you cannot charge to the root meter
+			debug_assert_eq!(self.own_usage.charge, <BalanceOf<T>>::zero());
+			debug_assert_eq!(self.own_usage.refund, <BalanceOf<T>>::zero());
+			E::unreserve_limit(origin, &self.limit, &self.total_usage);
+		}
 	}
 }
 
-impl<'a, T, E> RootMeter<'a, T, E>
+impl<T, E, S> RawMeter<T, E, S>
 where
 	T: Config,
 	T::AccountId: UncheckedFrom<T::Hash> + AsRef<[u8]>,
 	E: Ext<T>,
+	S: state::State,
 {
-	pub fn new(origin: &'a T::AccountId, limit: BalanceOf<T>) -> Result<Self, DispatchError> {
-		E::reserve_limit(&origin, &limit)?;
-		Ok(Self { origin, limit, usage: Default::default(), _ext: PhantomData })
-	}
-
-	pub fn nested(&'a mut self, contract: T::AccountId) -> NestedMeter<T, E> {
-		NestedMeter { root: self, contract, usage: Default::default() }
-	}
-}
-
-impl<'root, T, E> NestedMeter<'root, T, E>
-where
-	T: Config,
-	T::AccountId: UncheckedFrom<T::Hash> + AsRef<[u8]>,
-	E: Ext<T>,
-{
-	pub fn absorb(self, persist: bool) {
-		if !persist {
-			// revert changes to the overall usage
-			self.root.usage = self.root.usage.saturating_sub(self.usage);
-		} else {
-			E::charge(self.root.origin, &self.contract, &self.usage.cost());
+	pub fn nested(&mut self, contract: T::AccountId) -> RawMeter<T, E, state::Nested> {
+		RawMeter {
+			origin: None,
+			limit: self.available(),
+			total_usage: Default::default(),
+			own_usage: Default::default(),
+			_phantom: PhantomData,
 		}
 	}
 
+	pub fn absorb(
+		&mut self,
+		absorbed: &mut RawMeter<T, E, state::Nested>,
+		origin: &T::AccountId,
+		contract: &T::AccountId,
+	) {
+		E::charge(origin, &contract, &absorbed.own_usage.cost());
+		self.total_usage = self.total_usage.saturating_add(absorbed.total_usage);
+		absorbed.limit = Default::default();
+		absorbed.total_usage = Default::default();
+		absorbed.own_usage = Default::default();
+	}
+
+	fn available(&self) -> BalanceOf<T> {
+		self.limit
+			.saturating_add(self.total_usage.refund)
+			.saturating_sub(self.total_usage.charge)
+	}
+}
+
+impl<T, E> RawMeter<T, E, state::Root>
+where
+	T: Config,
+	T::AccountId: UncheckedFrom<T::Hash> + AsRef<[u8]>,
+	E: Ext<T>,
+{
+	pub fn new(origin: T::AccountId, limit: BalanceOf<T>) -> Result<Self, DispatchError> {
+		E::reserve_limit(&origin, &limit)?;
+		Ok(Self {
+			origin: Some(origin),
+			limit,
+			total_usage: Default::default(),
+			own_usage: Default::default(),
+			_phantom: PhantomData,
+		})
+	}
+}
+
+impl<T, E> RawMeter<T, E, state::Nested>
+where
+	T: Config,
+	T::AccountId: UncheckedFrom<T::Hash> + AsRef<[u8]>,
+	E: Ext<T>,
+{
 	pub fn charge(&mut self, usage: Usage<T>) -> DispatchResult {
-		self.root.usage = self.root.usage.saturating_add(usage);
-		self.usage = self.usage.saturating_add(usage);
-		if let Cost::Charge(amount) = self.root.usage.cost() {
-			if amount > self.root.limit {
-				return Err(<Error<T>>::StorageExhausted.into());
+		self.total_usage = self.total_usage.saturating_add(usage);
+		self.own_usage = self.own_usage.saturating_add(usage);
+		if let Cost::Charge(amount) = self.total_usage.cost() {
+			if amount > self.limit {
+				return Err(<Error<T>>::StorageExhausted.into())
 			}
 		}
 		Ok(())
@@ -160,11 +193,22 @@ impl<T: Config> Ext<T> for DefaultExt {
 		unimplemented!()
 	}
 
-	fn unreserve_limit(origin: &T::AccountId, usage: &Usage<T>) {
+	fn unreserve_limit(origin: &T::AccountId, limit: &BalanceOf<T>, usage: &Usage<T>) {
 		unimplemented!()
 	}
 
 	fn charge(origin: &T::AccountId, contract: &T::AccountId, amount: &Cost<T>) {
 		unimplemented!()
 	}
+}
+
+/// Private submodule with public types to prevent other modules from naming them.
+mod state {
+	pub trait State {}
+
+	pub enum Root {}
+	pub enum Nested {}
+
+	impl State for Root {}
+	impl State for Nested {}
 }

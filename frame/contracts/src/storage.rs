@@ -37,7 +37,7 @@ use sp_io::hashing::blake2_256;
 use sp_runtime::{traits::Hash, RuntimeDebug};
 use sp_std::{marker::PhantomData, prelude::*};
 
-pub use meter::Meter as StorageMeter;
+pub use meter::{Meter as StorageMeter, NestedMeter as NestedStorageMeter};
 
 pub type ContractInfo<T> = RawContractInfo<CodeHash<T>>;
 
