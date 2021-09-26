@@ -31,6 +31,7 @@ use frame_system::RawOrigin;
 // The auto-generated weight estimate of this pallet is copied over to the `weights.rs` file.
 // The exact command of how the estimate generated is printed at the top of the file.
 
+//trace_macros!{true};
 // Details on using the benchmarks macro can be seen at:
 //   https://substrate.dev/rustdocs/v3.0.0/frame_benchmarking/macro.benchmarks.html
 benchmarks! {
@@ -73,4 +74,4 @@ benchmarks! {
 //
 // The line generates three steps per benchmark, with repeat=1 and the three steps are
 //   [low, mid, high] of the range.
-impl_benchmark_test_suite!(Pallet, crate::tests::new_test_ext(), crate::tests::Test);
+//impl_benchmark_test_suite!(Pallet, crate::tests::new_test_ext(), crate::tests::Test);

@@ -188,6 +188,7 @@ macro_rules! benchmarks {
 		$crate::benchmarks_iter!(
 			{ }
 			{ }
+			{ }
 			( )
 			( )
 			( )
@@ -205,6 +206,7 @@ macro_rules! benchmarks_instance {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter!(
+			{ }
 			{ I: Instance }
 			{ }
 			( )
@@ -224,6 +226,7 @@ macro_rules! benchmarks_instance_pallet {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter!(
+			{ }
 			{ I: 'static }
 			{ }
 			( )
@@ -239,6 +242,7 @@ macro_rules! benchmarks_instance_pallet {
 macro_rules! benchmarks_iter {
 	// detect and extract where clause:
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -248,6 +252,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
+			{ }
 			{ $( $instance: $instance_bound)? }
 			{ $( $where_bound )* }
 			( $( $names )* )
@@ -258,6 +263,7 @@ macro_rules! benchmarks_iter {
 	};
 	// detect and extract `#[skip_meta]` tag:
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -268,6 +274,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -279,6 +286,7 @@ macro_rules! benchmarks_iter {
 	};
 	// detect and extract `#[extra] tag:
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -289,6 +297,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -300,6 +309,7 @@ macro_rules! benchmarks_iter {
 	};
 	// mutation arm:
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* ) // This contains $( $( { $instance } )? $name:ident )*
@@ -310,6 +320,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -322,6 +333,7 @@ macro_rules! benchmarks_iter {
 	};
 	// mutation arm:
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -333,6 +345,7 @@ macro_rules! benchmarks_iter {
 	) => {
 		$crate::paste::paste! {
 			$crate::benchmarks_iter! {
+				{ }
 				{ $( $instance: $instance_bound )? }
 				{ $( $where_clause )* }
 				( $( $names )* )
@@ -367,6 +380,7 @@ macro_rules! benchmarks_iter {
 	};
 	// iteration arm:
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -394,6 +408,7 @@ macro_rules! benchmarks_iter {
 		);
 
 		$crate::benchmarks_iter!(
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* { $( $instance )? } $name )
@@ -404,6 +419,7 @@ macro_rules! benchmarks_iter {
 	};
 	// iteration-exit arm
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -425,6 +441,7 @@ macro_rules! benchmarks_iter {
 	};
 	// add verify block to _() format
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -434,6 +451,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -446,6 +464,7 @@ macro_rules! benchmarks_iter {
 	};
 	// add verify block to name() format
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -455,6 +474,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -467,6 +487,7 @@ macro_rules! benchmarks_iter {
 	};
 	// add verify block to {} format
 	(
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -476,6 +497,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter!(
+			{ }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
