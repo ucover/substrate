@@ -252,7 +252,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound)? }
 			{ $( $where_bound )* }
 			( $( $names )* )
@@ -274,7 +274,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -297,7 +297,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -320,7 +320,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -345,7 +345,7 @@ macro_rules! benchmarks_iter {
 	) => {
 		$crate::paste::paste! {
 			$crate::benchmarks_iter! {
-				{ }
+				{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 				{ $( $instance: $instance_bound )? }
 				{ $( $where_clause )* }
 				( $( $names )* )
@@ -408,7 +408,7 @@ macro_rules! benchmarks_iter {
 		);
 
 		$crate::benchmarks_iter!(
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* { $( $instance )? } $name )
@@ -451,7 +451,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -474,7 +474,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
@@ -497,7 +497,7 @@ macro_rules! benchmarks_iter {
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter!(
-			{ }
+			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
