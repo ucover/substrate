@@ -242,7 +242,7 @@ macro_rules! benchmarks_instance_pallet {
 macro_rules! benchmarks_iter {
 	// detect and extract where clause:
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -263,7 +263,7 @@ macro_rules! benchmarks_iter {
 	};
 	// detect and extract `#[skip_meta]` tag:
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -286,7 +286,7 @@ macro_rules! benchmarks_iter {
 	};
 	// detect and extract `#[extra] tag:
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -309,7 +309,7 @@ macro_rules! benchmarks_iter {
 	};
 	// mutation arm:
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* ) // This contains $( $( { $instance } )? $name:ident )*
@@ -333,7 +333,7 @@ macro_rules! benchmarks_iter {
 	};
 	// mutation arm:
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -380,7 +380,7 @@ macro_rules! benchmarks_iter {
 	};
 	// iteration arm:
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -419,7 +419,7 @@ macro_rules! benchmarks_iter {
 	};
 	// iteration-exit arm
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -441,7 +441,7 @@ macro_rules! benchmarks_iter {
 	};
 	// add verify block to _() format
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -464,7 +464,7 @@ macro_rules! benchmarks_iter {
 	};
 	// add verify block to name() format
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
@@ -487,7 +487,7 @@ macro_rules! benchmarks_iter {
 	};
 	// add verify block to {} format
 	(
-		{ }
+		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
