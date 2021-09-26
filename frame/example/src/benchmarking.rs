@@ -67,6 +67,8 @@ benchmarks! {
 		// The benchmark execution phase could also be a closure with custom code
 		m.sort();
 	}
+
+	impl_test_suite!(Pallet, crate::tests::new_test_ext(), crate::tests::Test)
 }
 
 // This line generates test cases for benchmarking, and could be run by:
@@ -75,4 +77,4 @@ benchmarks! {
 //
 // The line generates three steps per benchmark, with repeat=1 and the three steps are
 //   [low, mid, high] of the range.
-//impl_benchmark_test_suite!(Pallet, crate::tests::new_test_ext(), crate::tests::Test);
+//

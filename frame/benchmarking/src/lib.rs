@@ -240,6 +240,27 @@ macro_rules! benchmarks_instance_pallet {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! benchmarks_iter {
+	// detect and extract `impl_test_suite` call:
+	(
+		{ }
+		{ $( $instance:ident: $instance_bound:tt )? }
+		{ $( $where_clause:tt )* }
+		( $( $names:tt )* )
+		( $( $names_extra:tt )* )
+		( $( $names_skip_meta:tt )* )
+		impl_test_suite!($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)
+		$( $rest:tt )*
+	) => {
+		$crate::benchmarks_iter! {
+			{ $bench_module, $new_test_ext, $test $(, $( $args )* )? }
+			{ $( $instance: $instance_bound )? }
+			{ $( $where_clause )* }
+			( $( $names )* )
+			( $( $names_extra )* )
+			( $( $names_skip_meta )* )
+			$( $rest )*
+		}
+	};
 	// detect and extract where clause:
 	(
 		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
@@ -298,28 +319,6 @@ macro_rules! benchmarks_iter {
 	) => {
 		$crate::benchmarks_iter! {
 			{ $($bench_module, $new_test_ext, $test $(, $( $args )* )?)? }
-			{ $( $instance: $instance_bound )? }
-			{ $( $where_clause )* }
-			( $( $names )* )
-			( $( $names_extra )* $name )
-			( $( $names_skip_meta )* )
-			$name
-			$( $rest )*
-		}
-	};
-	// detect and extract `impl_benchmark_test_suite` call:
-	(
-		{ }
-		{ $( $instance:ident: $instance_bound:tt )? }
-		{ $( $where_clause:tt )* }
-		( $( $names:tt )* )
-		( $( $names_extra:tt )* )
-		( $( $names_skip_meta:tt )* )
-		impl_benchmark_test_suite ( $bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )? )
-		$( $rest:tt )*
-	) => {
-		$crate::benchmarks_iter! {
-			{ $bench_module, $new_test_ext, $test $(, $( $args )* )? }
 			{ $( $instance: $instance_bound )? }
 			{ $( $where_clause )* }
 			( $( $names )* )
