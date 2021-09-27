@@ -753,8 +753,6 @@ macro_rules! benchmark_backend {
 	};
 }
 
-
-
 // Create #[test] functions for the given bench cases.
 #[macro_export]
 #[doc(hidden)]
@@ -765,11 +763,11 @@ macro_rules! impl_bench_case_tests {
 		$( { $( $bench_inst:ident )? } $bench:ident )*
 	)
 	=> {
-		/*$crate::impl_bench_name_tests!(
+		$crate::impl_bench_name_tests!(
 			$module, $new_test_exec, $exec_name, $test, $extra,
 			{ $( $names_extra )* },
 			$( {$bench} )+
-		);*/
+		);
 	}
 }
 
@@ -783,7 +781,7 @@ macro_rules! impl_bench_name_tests {
 		{ $( $names_extra:tt )* },
 		{$name:ident}
 	) => {
-		/*$crate::paste::paste! {
+		$crate::paste::paste! {
 			#[test]
 			fn [<bench_ $name>] () {
 				$new_test_exec.$exec_name(|| {
@@ -841,7 +839,7 @@ macro_rules! impl_bench_name_tests {
 					}
 				});
 			}
-		}*/
+		}
 	};
 	// recursion tail
     (
@@ -1436,11 +1434,11 @@ macro_rules! my_impl_benchmark_test_suite {
 		@user:
 			$(,)?
 	) => {
-		/*$crate::impl_bench_case_tests!(
-			$bench_module, $new_test_ext, $exec_name, $test, $extra,
-			{ $( $names_extra:tt )* },
+		$crate::impl_bench_case_tests!(
+			{ $bench_module, $new_test_ext, $exec_name, $test, $extra }
+			{ $( $names_extra:tt )* }
 			$($names)+
-		);*/
+		);
 	};
 	// all options set; nothing else in user-provided keyword arguments
 	(
