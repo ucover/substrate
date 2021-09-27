@@ -452,7 +452,7 @@ macro_rules! benchmarks_iter {
 			{ $( $instance: $instance_bound )? }
 			$( $names )*
 		);
-		$crate::impl_benchmark_test_suite!(
+		$crate::my_impl_benchmark_test_suite!(
 			$bench_module,
 			$new_test_ext,
 			$test
@@ -1163,6 +1163,28 @@ macro_rules! impl_benchmark_test {
 // just iterate over the `Benchmarking::benchmarks` list to run the actual implementations.
 #[macro_export]
 macro_rules! impl_benchmark_test_suite {
+	(
+		$bench_module:ident,
+		$new_test_ext:expr,
+		$test:path
+		$(, $( $rest:tt )* )?
+	) => {
+		$crate::my_impl_benchmark_test_suite!(
+			@selected:
+				$bench_module,
+				$new_test_ext,
+				$test,
+				benchmarks_path = super,
+				extra = true,
+				exec_name = execute_with,
+			@user:
+				$( $( $rest )* )?
+		);
+	}
+}
+
+#[macro_export]
+macro_rules! my_impl_benchmark_test_suite {	
 	// user might or might not have set some keyword arguments; set the defaults
 	//
 	// The weird syntax indicates that `rest` comes only after a comma, which is otherwise optional
@@ -1172,7 +1194,7 @@ macro_rules! impl_benchmark_test_suite {
 		$test:path
 		$(, $( $rest:tt )* )?
 	) => {
-		$crate::impl_benchmark_test_suite!(
+		$crate::my_impl_benchmark_test_suite!(
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1197,7 +1219,7 @@ macro_rules! impl_benchmark_test_suite {
 			benchmarks_path = $benchmarks_path:ident
 			$(, $( $rest:tt )* )?
 	) => {
-		$crate::impl_benchmark_test_suite!(
+		$crate::my_impl_benchmark_test_suite!(
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1222,7 +1244,7 @@ macro_rules! impl_benchmark_test_suite {
 			extra = $extra:expr
 			$(, $( $rest:tt )* )?
 	) => {
-		$crate::impl_benchmark_test_suite!(
+		$crate::my_impl_benchmark_test_suite!(
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1247,7 +1269,7 @@ macro_rules! impl_benchmark_test_suite {
 			exec_name = $exec_name:ident
 			$(, $( $rest:tt )* )?
 	) => {
-		$crate::impl_benchmark_test_suite!(
+		$crate::my_impl_benchmark_test_suite!(
 			@selected:
 				$bench_module,
 				$new_test_ext,
