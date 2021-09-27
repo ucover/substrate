@@ -753,6 +753,111 @@ macro_rules! benchmark_backend {
 	};
 }
 
+
+
+// Create #[test] functions for the given bench cases.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_bench_case_tests {
+	(
+		{ $module:ident, $new_test_exec:expr, $exec_name:ident, $test:path, $extra:expr }
+		{ $( $names_extra:tt )* }
+		$( { $( $bench_inst:ident )? } $bench:ident )*
+	)
+	=> {
+		/*$crate::impl_bench_name_tests!(
+			$module, $new_test_exec, $exec_name, $test, $extra,
+			{ $( $names_extra )* },
+			$( {$bench} )+
+		);*/
+	}
+}
+
+// Create a #[test] function for the given bench case name.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_bench_name_tests {
+	// recursion anchor
+	(
+		$module:ident, $new_test_exec:expr, $exec_name:ident, $test:path, $extra:expr,
+		{ $( $names_extra:tt )* },
+		{$name:ident}
+	) => {
+		/*$crate::paste::paste! {
+			#[test]
+			fn [<bench_ $name>] () {
+				$new_test_exec.$exec_name(|| {
+					// Skip all #[extra] benchmarks if $extra is false.
+					if !($extra) {
+						let disabled = $crate::vec![ $( stringify!($names_extra).as_ref() ),* ];
+						if disabled.contains(&stringify!($name)) {
+							$crate::log::error!(
+								"INFO: benchmark skipped - {}",
+								stringify!($name),
+							);
+							return ();
+						}
+					}
+					// Same per-case logic as when all cases are run in the
+					// same function.
+					match std::panic::catch_unwind(|| {
+						$module::<$test>::[< test_benchmark_ $name >] ()
+					}) {
+						Err(err) => {
+							println!(
+								"{}: {:?}",
+								stringify!($name),
+								err,
+							);
+							assert!(false);
+						},
+						Ok(Err(err)) => {
+							match err {
+								$crate::BenchmarkError::Stop(err) => {
+									println!(
+										"{}: {:?}",
+										stringify!($name),
+										err,
+									);
+									assert!(false);
+								},
+								$crate::BenchmarkError::Override(_) => {
+									// This is still considered a success condition.
+									$crate::log::error!(
+										"WARNING: benchmark error overrided - {}",
+										stringify!($name),
+									);
+								},
+								$crate::BenchmarkError::Skip => {
+									// This is considered a success condition.
+									$crate::log::error!(
+										"WARNING: benchmark error skipped - {}",
+										stringify!($name),
+									);
+								}
+							}
+						},
+						Ok(Ok(())) => (),
+					}
+				});
+			}
+		}*/
+	};
+	// recursion tail
+    (
+		$module:ident, $new_test_exec:expr, $exec_name:ident, $test:path, $extra:expr,
+		{ $( $names_extra:tt )* },
+		{$name:ident} $({$rest:ident})+
+	) => {
+		// car
+		$crate::impl_bench_name_tests!($module, $new_test_exec, $exec_name, $test, $extra,
+			{ $( $names_extra )* }, {$name});
+		// cdr
+		$crate::impl_bench_name_tests!($module, $new_test_exec, $exec_name, $test, $extra,
+			{ $( $names_extra )* }, $({$rest})+);
+	};
+}
+
 // Creates a `SelectedBenchmark` enum implementing `BenchmarkingSetup`.
 //
 // Every variant must implement [`BenchmarkingSetup`].
@@ -1331,6 +1436,11 @@ macro_rules! my_impl_benchmark_test_suite {
 		@user:
 			$(,)?
 	) => {
+		/*$crate::impl_bench_case_tests!(
+			$bench_module, $new_test_ext, $exec_name, $test, $extra,
+			{ $( $names_extra:tt )* },
+			$($names)+
+		);*/
 	};
 	// all options set; nothing else in user-provided keyword arguments
 	(
