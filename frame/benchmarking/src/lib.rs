@@ -453,10 +453,14 @@ macro_rules! benchmarks_iter {
 			$( $names )*
 		);
 		$crate::my_impl_benchmark_test_suite!(
+			( $( $names )* )
+			( $( $names_extra )* )
+			( $( $names_skip_meta )* )
+			
 			$bench_module,
 			$new_test_ext,
 			$test
-			$(, $( $args:tt )* )?
+			$(, $( $args )* )?
 		);
 		$crate::impl_benchmark!(
 			{ $( $where_clause )* }
@@ -1169,16 +1173,14 @@ macro_rules! impl_benchmark_test_suite {
 		$test:path
 		$(, $( $rest:tt )* )?
 	) => {
-		$crate::my_impl_benchmark_test_suite!(
-			@selected:
-				$bench_module,
-				$new_test_ext,
-				$test,
-				benchmarks_path = super,
-				extra = true,
-				exec_name = execute_with,
-			@user:
-				$( $( $rest )* )?
+		$crate::my_impl_benchmark_test_suite!(	// todo
+			()
+			()
+			()
+			$bench_module,
+			$new_test_ext,
+			$test
+			$(, $( $rest )* )?
 		);
 	}
 }
@@ -1189,12 +1191,20 @@ macro_rules! my_impl_benchmark_test_suite {
 	//
 	// The weird syntax indicates that `rest` comes only after a comma, which is otherwise optional
 	(
+		( $( $names:tt )* )
+		( $( $names_extra:tt )* )
+		( $( $names_skip_meta:tt )* )
+
 		$bench_module:ident,
 		$new_test_ext:expr,
 		$test:path
 		$(, $( $rest:tt )* )?
 	) => {
 		$crate::my_impl_benchmark_test_suite!(
+			@cases:
+				( $( $names )* )
+				( $( $names_extra )* )
+				( $( $names_skip_meta )* )
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1208,6 +1218,10 @@ macro_rules! my_impl_benchmark_test_suite {
 	};
 	// pick off the benchmarks_path keyword argument
 	(
+		@cases:
+			( $( $names:tt )* )
+			( $( $names_extra:tt )* )
+			( $( $names_skip_meta:tt )* )
 		@selected:
 			$bench_module:ident,
 			$new_test_ext:expr,
@@ -1220,6 +1234,10 @@ macro_rules! my_impl_benchmark_test_suite {
 			$(, $( $rest:tt )* )?
 	) => {
 		$crate::my_impl_benchmark_test_suite!(
+			@cases:
+				( $( $names )* )
+				( $( $names_extra )* )
+				( $( $names_skip_meta )* )
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1233,6 +1251,10 @@ macro_rules! my_impl_benchmark_test_suite {
 	};
 	// pick off the extra keyword argument
 	(
+		@cases:
+			( $( $names:tt )* )
+			( $( $names_extra:tt )* )
+			( $( $names_skip_meta:tt )* )
 		@selected:
 			$bench_module:ident,
 			$new_test_ext:expr,
@@ -1245,6 +1267,10 @@ macro_rules! my_impl_benchmark_test_suite {
 			$(, $( $rest:tt )* )?
 	) => {
 		$crate::my_impl_benchmark_test_suite!(
+			@cases:
+				( $( $names )* )
+				( $( $names_extra )* )
+				( $( $names_skip_meta )* )
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1258,6 +1284,10 @@ macro_rules! my_impl_benchmark_test_suite {
 	};
 	// pick off the exec_name keyword argument
 	(
+		@cases:
+			( $( $names:tt )* )
+			( $( $names_extra:tt )* )
+			( $( $names_skip_meta:tt )* )
 		@selected:
 			$bench_module:ident,
 			$new_test_ext:expr,
@@ -1270,6 +1300,10 @@ macro_rules! my_impl_benchmark_test_suite {
 			$(, $( $rest:tt )* )?
 	) => {
 		$crate::my_impl_benchmark_test_suite!(
+			@cases:
+				( $( $names )* )
+				( $( $names_extra )* )
+				( $( $names_skip_meta )* )
 			@selected:
 				$bench_module,
 				$new_test_ext,
@@ -1283,6 +1317,27 @@ macro_rules! my_impl_benchmark_test_suite {
 	};
 	// all options set; nothing else in user-provided keyword arguments
 	(
+		@cases:
+			( $( $names:tt )+ )
+			( $( $names_extra:tt )* )
+			( $( $names_skip_meta:tt )* )
+		@selected:
+			$bench_module:ident,
+			$new_test_ext:expr,
+			$test:path,
+			benchmarks_path = $path_to_benchmarks_invocation:ident,
+			extra = $extra:expr,
+			exec_name = $exec_name:ident,
+		@user:
+			$(,)?
+	) => {
+	};
+	// all options set; nothing else in user-provided keyword arguments
+	(
+		@cases:
+			()
+			()
+			()
 		@selected:
 			$bench_module:ident,
 			$new_test_ext:expr,
