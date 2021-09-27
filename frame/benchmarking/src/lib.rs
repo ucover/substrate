@@ -438,9 +438,37 @@ macro_rules! benchmarks_iter {
 			$( $rest )*
 		);
 	};
+	// iteration-exit arm TODO this one
+	(
+		{ $bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )? }
+		{ $( $instance:ident: $instance_bound:tt )? }
+		{ $( $where_clause:tt )* }
+		( $( $names:tt )* )
+		( $( $names_extra:tt )* )
+		( $( $names_skip_meta:tt )* )
+	) => {
+		$crate::selected_benchmark!(
+			{ $( $where_clause)* }
+			{ $( $instance: $instance_bound )? }
+			$( $names )*
+		);
+		$crate::impl_benchmark_test_suite!(
+			$bench_module,
+			$new_test_ext,
+			$test
+			$(, $( $args:tt )* )?
+		);
+		$crate::impl_benchmark!(
+			{ $( $where_clause )* }
+			{ $( $instance: $instance_bound )? }
+			( $( $names )* )
+			( $( $names_extra ),* )
+			( $( $names_skip_meta ),* )
+		);
+	};
 	// iteration-exit arm
 	(
-		{ $($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)? }
+		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
 		{ $( $where_clause:tt )* }
 		( $( $names:tt )* )
