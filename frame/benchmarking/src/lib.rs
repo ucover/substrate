@@ -248,7 +248,7 @@ macro_rules! benchmarks_iter {
 		( $( $names:tt )* )
 		( $( $names_extra:tt )* )
 		( $( $names_skip_meta:tt )* )
-		impl_test_suite!($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)
+		impl_benchmark_test_suite!($bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )?)
 		$( $rest:tt )*
 	) => {
 		$crate::benchmarks_iter! {
@@ -438,39 +438,7 @@ macro_rules! benchmarks_iter {
 			$( $rest )*
 		);
 	};
-	// iteration-exit arm TODO this one
-	(
-		{ $bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )? }
-		{ $( $instance:ident: $instance_bound:tt )? }
-		{ $( $where_clause:tt )* }
-		( $( $names:tt )* )
-		( $( $names_extra:tt )* )
-		( $( $names_skip_meta:tt )* )
-	) => {
-		$crate::selected_benchmark!(
-			{ $( $where_clause)* }
-			{ $( $instance: $instance_bound )? }
-			$( $names )*
-		);
-		$crate::my_impl_benchmark_test_suite!(
-			( $( $names )* )
-			( $( $names_extra )* )
-			( $( $names_skip_meta )* )
-			
-			$bench_module,
-			$new_test_ext,
-			$test
-			$(, $( $args )* )?
-		);
-		$crate::impl_benchmark!(
-			{ $( $where_clause )* }
-			{ $( $instance: $instance_bound )? }
-			( $( $names )* )
-			( $( $names_extra ),* )
-			( $( $names_skip_meta ),* )
-		);
-	};
-	// iteration-exit arm
+	// iteration-exit arm which generates one #[test] function for all cases.
 	(
 		{ }
 		{ $( $instance:ident: $instance_bound:tt )? }
@@ -490,6 +458,37 @@ macro_rules! benchmarks_iter {
 			( $( $names )* )
 			( $( $names_extra ),* )
 			( $( $names_skip_meta ),* )
+		);
+	};
+	// iteration-exit arm which generates a #[test] function for each case.
+	(
+		{ $bench_module:ident, $new_test_ext:expr, $test:path $(, $( $args:tt )* )? }
+		{ $( $instance:ident: $instance_bound:tt )? }
+		{ $( $where_clause:tt )* }
+		( $( $names:tt )* )
+		( $( $names_extra:tt )* )
+		( $( $names_skip_meta:tt )* )
+	) => {
+		$crate::selected_benchmark!(
+			{ $( $where_clause)* }
+			{ $( $instance: $instance_bound )? }
+			$( $names )*
+		);
+		$crate::impl_benchmark!(
+			{ $( $where_clause )* }
+			{ $( $instance: $instance_bound )? }
+			( $( $names )* )
+			( $( $names_extra ),* )
+			( $( $names_skip_meta ),* )
+		);
+		$crate::impl_test_function!(
+			( $( $names )* )
+			( $( $names_extra )* )
+			( $( $names_skip_meta )* )
+			$bench_module,
+			$new_test_ext,
+			$test
+			$(, $( $args )* )?
 		);
 	};
 	// add verify block to _() format
@@ -1276,7 +1275,7 @@ macro_rules! impl_benchmark_test_suite {
 		$test:path
 		$(, $( $rest:tt )* )?
 	) => {
-		$crate::my_impl_benchmark_test_suite!(	// todo
+		$crate::impl_test_function!(
 			()
 			()
 			()
@@ -1289,7 +1288,7 @@ macro_rules! impl_benchmark_test_suite {
 }
 
 #[macro_export]
-macro_rules! my_impl_benchmark_test_suite {	
+macro_rules! impl_test_function {	
 	// user might or might not have set some keyword arguments; set the defaults
 	//
 	// The weird syntax indicates that `rest` comes only after a comma, which is otherwise optional
@@ -1303,7 +1302,7 @@ macro_rules! my_impl_benchmark_test_suite {
 		$test:path
 		$(, $( $rest:tt )* )?
 	) => {
-		$crate::my_impl_benchmark_test_suite!(
+		$crate::impl_test_function!(
 			@cases:
 				( $( $names )* )
 				( $( $names_extra )* )
@@ -1336,7 +1335,7 @@ macro_rules! my_impl_benchmark_test_suite {
 			benchmarks_path = $benchmarks_path:ident
 			$(, $( $rest:tt )* )?
 	) => {
-		$crate::my_impl_benchmark_test_suite!(
+		$crate::impl_test_function!(
 			@cases:
 				( $( $names )* )
 				( $( $names_extra )* )
@@ -1369,7 +1368,7 @@ macro_rules! my_impl_benchmark_test_suite {
 			extra = $extra:expr
 			$(, $( $rest:tt )* )?
 	) => {
-		$crate::my_impl_benchmark_test_suite!(
+		$crate::impl_test_function!(
 			@cases:
 				( $( $names )* )
 				( $( $names_extra )* )
@@ -1402,7 +1401,7 @@ macro_rules! my_impl_benchmark_test_suite {
 			exec_name = $exec_name:ident
 			$(, $( $rest:tt )* )?
 	) => {
-		$crate::my_impl_benchmark_test_suite!(
+		$crate::impl_test_function!(
 			@cases:
 				( $( $names )* )
 				( $( $names_extra )* )
